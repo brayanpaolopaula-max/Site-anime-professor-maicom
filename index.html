@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brotato - Portal de Animes</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --bg: #0b0b0b;
+            --card-bg: #1a1a1a;
+            --text: #ffffff;
+            --text-secondary: #cccccc;
+            --transition: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; scroll-behavior: smooth; }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            overflow-x: hidden;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(https://i.pinimg.com/originals/77/a2/66/77a266bb54fc65179ec0672d97268c3a.gif);
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 6%; background: rgba(0, 0, 0, 0.95);
+            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333;
+        }
+
+        nav { display: flex; gap: 20px; align-items: center; }
+        .nav-link { color: white; text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .nav-link:hover { color: var(--primary); }
+
+        .logo { font-size: 1.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; cursor: pointer; }
+
+        .search-box { flex: 0.5; }
+        .search-box input {
+            width: 100%; padding: 10px 20px; border-radius: 20px; border: 1px solid #333;
+            background: #111; color: white; outline: none;
+        }
+
+        .btn-sidebar-toggle {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 25px; cursor: pointer; font-weight: bold;
+        }
+
+        .sidebar {
+            position: fixed; right: -350px; top: 0; width: 320px; height: 100%;
+            background: #141414; z-index: 2001; transition: 0.4s; padding: 30px 20px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8); border-left: 1px solid #333;
+        }
+        .sidebar.active { right: 0; }
+        .fav-item { display: flex; gap: 12px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; align-items: center; cursor: pointer; }
+        .fav-item img { width: 50px; height: 70px; object-fit: cover; border-radius: 4px; }
+
+        .page { display: none; padding: 40px 6%; min-height: 80vh; }
+        .page.active { display: block; }
+
+        section { margin-bottom: 60px; }
+        h2 { margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
+        h2::before { content: ""; width: 6px; height: 28px; background: var(--primary); border-radius: 3px; }
+        .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 25px; }
+
+        .anime-card {
+            position: relative; background: var(--card-bg); border-radius: 12px; 
+            overflow: hidden; cursor: pointer; transition: var(--transition); border: 1px solid #222;
+        }
+        .anime-card:hover { transform: translateY(-8px); border-color: var(--primary); }
+        .anime-card img { width: 100%; height: 270px; object-fit: cover; }
+        .heart-icon { position: absolute; top: 12px; right: 12px; font-size: 22px; color: rgba(255,255,255,0.4); z-index: 10; transition: 0.3s; }
+        .heart-icon.active { color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+        .anime-info { padding: 12px; text-align: center; font-weight: bold; }
+
+        .flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; perspective: 1000px; }
+        .flashcard-container { position: relative; width: 100%; height: 380px; cursor: pointer; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .flashcard-container.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; border: 1px solid #333; overflow: hidden; }
+        .card-front { background: var(--card-bg); display: flex; flex-direction: column; }
+        .card-front img { width: 100%; height: 80%; object-fit: cover; }
+        .card-front .title-box { height: 20%; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #222; }
+        .card-back { background: #1a1a1a; transform: rotateY(180deg); padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid var(--primary); text-align: center; }
+        .card-back h3 { color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid #333; width: 100%; padding-bottom: 10px; }
+
+        .quiz-wrapper { max-width: 750px; margin: 0 auto; background: var(--card-bg); padding: 40px; border-radius: 20px; border: 1px solid #333; }
+        .progress-bar { width: 100%; height: 10px; background: #222; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.4s; }
+        .quiz-selector { margin-bottom: 30px; text-align: center; }
+        select { padding: 12px; border-radius: 10px; background: #222; color: white; border: 1px solid var(--primary); width: 100%; max-width: 400px; cursor: pointer; }
+        .quiz-question { font-size: 1.4rem; margin-bottom: 25px; color: var(--primary); }
+        .quiz-option { background: #252525; padding: 18px; border-radius: 12px; cursor: pointer; transition: 0.3s; border: 1px solid #333; margin-bottom: 10px; }
+        .quiz-option:hover { border-color: var(--primary); }
+        .quiz-option.correct { background: #2ecc71 !important; }
+        .quiz-option.wrong { background: #e74c3c !important; }
+        .lvl-badge { font-size: 0.8rem; background: #333; padding: 4px 10px; border-radius: 5px; margin-bottom: 10px; display: inline-block; color: #aaa; }
+
+        .modal { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card-bg); margin: 5vh auto; padding: 35px; width: 90%; max-width: 950px; border-radius: 20px; position: relative; }
+        .close-modal { position: absolute; right: 25px; top: 15px; font-size: 35px; cursor: pointer; }
+        .modal-body { display: flex; gap: 35px; flex-wrap: wrap; }
+        .modal-img { width: 280px; border-radius: 15px; }
+        .modal-details { flex: 1; min-width: 300px; }
+        .synopsis { color: var(--text-secondary); line-height: 1.8; margin: 20px 0; text-align: justify; }
+        .btn-watch { width: 100%; padding: 15px; border: none; border-radius: 30px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+        .btn-fav-modal { width: 100%; padding: 12px; background: none; border: 1px solid #444; color: white; border-radius: 30px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+
+        footer { text-align: center; padding: 50px; border-top: 1px solid #333; color: #888; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo" onclick="showPage('home')">Brotato</div>
+    <nav>
+        <span class="nav-link" onclick="showPage('home')">Animes</span>
+        <span class="nav-link" onclick="showPage('flashcards')">Flashcards</span>
+        <span class="nav-link" onclick="showPage('quiz')">Quiz</span>
+    </nav>
+    <div class="search-box" id="search-container">
+        <input type="text" id="animeSearch" placeholder="Pesquisar..." oninput="handleSearch()">
+    </div>
+    <button class="btn-sidebar-toggle" onclick="toggleSidebar()">❤ FAVORITOS</button>
+</header>
+
+<div id="sidebar" class="sidebar">
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <h3>Meus Favoritos</h3>
+        <span onclick="toggleSidebar()" style="cursor:pointer; font-size:25px">&times;</span>
+    </div>
+    <div id="sidebar-list"></div>
+</div>
+
+<main id="home" class="page active">
+    <section id="romance"><h2>Romance & Escolar</h2><div class="anime-grid" id="grid-romance"></div></section>
+    <section id="acao"><h2>Ação & Sobrenatural</h2><div class="anime-grid" id="grid-acao"></div></section>
+    <section id="shonen"><h2>Shonen & Esportes</h2><div class="anime-grid" id="grid-shonen"></div></section>
+    <section id="comedia"><h2>Comédia & Aventura</h2><div class="anime-grid" id="grid-comedia"></div></section>
+</main>
+
+<main id="flashcards" class="page">
+    <h2 style="margin-bottom: 30px;">Curiosidades (Flashcards)</h2>
+    <div class="flashcard-grid" id="flash-container"></div>
+</main>
+
+<main id="quiz" class="page">
+    <div class="quiz-wrapper">
+        <div class="quiz-selector">
+            <h2>Desafio Subindo de Nível</h2>
+            <p>Selecione um anime para encarar 10 questões (Nível 1 ao 10):</p>
+            <select id="anime-select" onchange="startQuiz()"></select>
+        </div>
+        <div id="quiz-game" style="display:none;">
+            <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+            <div class="lvl-badge" id="lvl-txt">Nível 1</div>
+            <div class="quiz-question" id="question"></div>
+            <div class="quiz-options" id="options"></div>
+            <button id="next-btn" onclick="nextQuestion()" style="display:none; margin-top:20px; padding:15px; width:100%; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">PRÓXIMA FASE</button>
+        </div>
+        <div id="quiz-result" style="display:none; text-align:center;">
+            <h2 id="result-title"></h2>
+            <p id="score-text" style="font-size:1.5rem; margin:20px 0;"></p>
+            <button onclick="startQuiz()" style="padding:15px 30px; background:var(--primary); border:none; color:white; border-radius:30px; cursor:pointer; font-weight:bold;">RECOMEÇAR DESAFIO</button>
+        </div>
+    </div>
+</main>
+
+<div id="animeModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div id="modal-container" class="modal-body"></div>
+    </div>
+</div>
+
+<footer>
+     <strong>Desenvolvido por BRAYAN, com muito esforço e dedicação</strong> ❤️</p>
+</footer>
+
+<script>
+    const data = {
+        horimiya: { title: "Horimiya", cat: "romance", img: "https://i.pinimg.com/736x/23/45/b9/2345b9426d97388d876dd29f2c3e46b4.jpg", synopsis: "Horimiya é uma lufada de ar fresco no gênero romance escolar. A história desafia o conceito de aparências: Kyoko Hori é a garota popular e inteligente, mas em casa ela cuida do irmão e das tarefas domésticas. Izumi Miyamura parece um otaku sombrio na escola, mas esconde piercings e tatuagens. Quando seus mundos colidem, surge uma relação orgânica e madura.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/G9VHN9P43/horimiya", curiosidade: "O nome 'Horimiya' é a junção direta dos sobrenomes dos protagonistas: Hori e Miyamura!" },
+        kaoru: { title: "Kaoru Hana wa Rin to Saku", cat: "romance", img: "https://i.pinimg.com/736x/df/c3/e1/dfc3e124d2fc232c6b4df7b6844cb646.jpg", synopsis: "Este anime é uma obra-prima sobre gentileza e superação de preconceitos. Rintaro Okawa estuda em uma escola de rapazes conhecidos como 'delinquentes', enquanto Kaoru vai para uma escola feminina de elite. Apesar das barreiras sociais e dos olhares tortos da sociedade, a conexão entre eles floresce através de conversas honestas.", plataforma: "Netflix", link: "https://www.netflix.com/title/82024665", curiosidade: "O mangá é famoso por focar em diálogos maduros, evitando clichês de mal-entendidos." },
+        quintuplas: { title: "The Quintessential Quintuplets", cat: "romance", img: "https://i.pinimg.com/736x/ae/e7/4b/aee74b33a9e38e568ea808e132f3274c.jpg", synopsis: "Futaro Uesugi, um gênio pobre, aceita ser tutor de cinco irmãs gêmeas ricas que odeiam estudar. Cada irmã lida com seus próprios traumas e ambições. O mistério central de 'com qual delas ele vai se casar?' serve como pano de fundo para uma jornada emocionante sobre amadurecimento.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GY4PD7Z06/the-quintessential-quintuplets", curiosidade: "Cada uma das gêmeas tem um acessório ou penteado único para que o leitor consiga diferenciá-las." },
+        classroom: { title: "Classroom of the Elite", cat: "romance", img: "https://i.pinimg.com/736x/28/14/30/281430a6a80fb0c1a9cf31998056e393.jpg", synopsis: "Este anime é um jogo de xadrez intelectual constante. Em uma escola de elite onde os alunos são avaliados por seu desempenho e 'pontos' valem dinheiro real, a Classe D tenta subir na hierarquia. O protagonista, Kiyotaka Ayanokoji, é um gênio frio e manipulador que opera nas sombras.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GRVN8MNQY/classroom-of-the-elite", curiosidade: "O autor utiliza citações de filósofos famosos como Maquiavel no início de quase todos os episódios." },
+        jjk: { title: "Jujutsu Kaisen", cat: "acao", img: "https://i.pinimg.com/736x/49/1f/45/491f451fdb27a46d1cc1149486ce1f89.jpg", synopsis: "Jujutsu Kaisen redefiniu o shonen moderno. Acompanhamos Yuji Itadori, que engole um dedo amaldiçoado para salvar seus amigos e se torna o receptáculo de Sukuna, o Rei das Maldições. O anime explora temas de morte, arrependimento e o que significa ter uma 'morte digna'.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GRDV0019R/jujutsu-kaisen", curiosidade: "Gege Akutami, o autor, nunca revelou seu rosto e usa um gato de um olho só como avatar." },
+        demonslayer: { title: "Demon Slayer", cat: "acao", img: "https://i.pinimg.com/736x/2c/5c/2b/2c5c2b3b82e42f93529a27aed9d2ed45.jpg", synopsis: "Demon Slayer é um espetáculo visual sem precedentes. A busca de Tanjiro Kamado para transformar sua irmã Nezuko de volta em humana após sua família ser massacrada por demônios é emocionante e heróica. A animação da Ufotable eleva cada batalha a um nível artístico.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GY5P48XEY/demon-slayer-kimetsu-no-yaiba", curiosidade: "Os brincos hanafuda do Tanjiro foram censurados em alguns países por lembrarem uma bandeira histórica." },
+        nanatsu: { title: "Nanatsu no Taizai", cat: "acao", img: "https://i.pinimg.com/736x/e1/df/c6/e1dfc6e8f0d8344e18adfa556d773ba8.jpg", synopsis: "Inspirado nas lendas arturianas, Sete Pecados Capitais apresenta um grupo de cavaleiros lendários que foram acusados de traição. Anos depois, a princesa Elizabeth busca a ajuda deles para salvar o reino. O anime combina fantasia medieval clássica com poderes exagerados.", plataforma: "Netflix", link: "https://www.netflix.com/title/80050063", curiosidade: "O símbolo de cada pecado está tatuado em uma parte diferente do corpo dos personagens." },
+        onepiece: { title: "One Piece", cat: "shonen", img: "https://i.pinimg.com/736x/73/98/15/73981585bbead4a3aa37b934b346fc92.jpg", synopsis: "Uma odisseia épica sobre liberdade e sonhos. Acompanhamos Monkey D. Luffy e sua tripulação em busca do lendário tesouro 'One Piece'. O que torna esta obra única é a construção de mundo incomparável: cada ilha visitada tem sua própria política e cultura.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GRMG8ZQZR/one-piece", curiosidade: "Eiichiro Oda planejou que a série durasse 5 anos, mas ela já passou dos 25!" },
+        drstone: { title: "Dr. Stone", cat: "shonen", img: "https://i.pinimg.com/736x/4d/dd/f9/4dddf9a99d763b89f20db3198bb9304d.jpg", synopsis: "Milhares de anos após a humanidade ser transformada em pedra, Senku Ishigami desperta em um mundo primitivo e decide reconstruir a civilização do zero usando a ciência. É uma celebração da curiosidade humana e do progresso tecnológico em um cenário de aventura.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GYEXQKJG6/dr-stone", curiosidade: "Todas as fórmulas científicas mostradas são reais e foram revisadas por especialistas." },
+        bluelock: { title: "Blue Lock", cat: "shonen", img: "https://i.pinimg.com/736x/4e/5b/43/4e5b43882d323a81573c88c47ba98875.jpg", synopsis: "Blue Lock trata o futebol como uma guerra psicológica de sobrevivência. Trezentos jovens atacantes competem pelo posto de maior goleador do mundo. O anime foca na evolução do 'ego' e como a pressão desperta talentos monstros.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/G4PH0WEKE/blue-lock", curiosidade: "O uniforme da seleção japonesa na Copa de 2022 teve colaboração criativa dos autores de Blue Lock." },
+        spyfamily: { title: "Spy x Family", cat: "comedia", img: "https://i.pinimg.com/736x/3b/68/d1/3b68d1e828307852dcabffc0937e0d28.jpg", synopsis: "Spy x Family equilibra espionagem com momentos doces. Um espião, uma assassina e uma criança telepata formam uma família falsa para cumprir uma missão secreta. Ninguém conhece a identidade real do outro, gerando situações hilárias.", plataforma: "Netflix", link: "https://www.netflix.com/pt/title/81511410", curiosidade: "As cadeiras nas capas dos mangás são móveis reais criados por designers famosos." },
+        konosuba: { title: "Konosuba", cat: "comedia", img: "https://i.pinimg.com/736x/9d/b8/65/9db865e43eb19d79ac4b208004e06c5c.jpg", synopsis: "A paródia definitiva do gênero isekai. Kazuma morre de forma embaraçosa e leva a deusa Aqua para um mundo mágico. Eles formam um grupo de desajustados: uma maga de um só feitiço e uma paladina masoquista.", plataforma: "Crunchyroll", link: "https://www.crunchyroll.com/pt-br/series/GYE5K3GQR/konosuba", curiosidade: "O grito 'Explosion!' da Megumin é gravado com entonações diferentes quase sempre." }
+    };
+
+    let favorites = JSON.parse(localStorage.getItem('brotato_favs')) || [];
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        document.getElementById('search-container').style.display = (pageId === 'home') ? 'block' : 'none';
+        if(pageId === 'flashcards') renderFlashcards();
+    }
+
+    function renderGrids() {
+        document.querySelectorAll('.anime-grid').forEach(g => g.innerHTML = "");
+        Object.keys(data).forEach(id => {
+            const isFav = favorites.includes(id);
+            const card = `
+                <div class="anime-card" data-title="${data[id].title.toLowerCase()}">
+                    <span class="heart-icon ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavorite('${id}')">❤</span>
+                    <div onclick="openModal('${id}')">
+                        <img src="${data[id].img}">
+                        <div class="anime-info">${data[id].title}</div>
+                    </div>
+                </div>`;
+            document.getElementById(`grid-${data[id].cat}`).innerHTML += card;
+        });
+        updateSidebar();
+    }
+
+    function renderFlashcards() {
+        const container = document.getElementById('flash-container');
+        container.innerHTML = "";
+        Object.keys(data).forEach(id => {
+            const anime = data[id];
+            const card = document.createElement('div');
+            card.className = 'flashcard-container';
+            card.onclick = () => card.classList.toggle('flipped');
+            card.innerHTML = `
+                <div class="card-front">
+                    <img src="${anime.img}">
+                    <div class="title-box">${anime.title}</div>
+                </div>
+                <div class="card-back">
+                    <h3>Curiosidade!</h3>
+                    <p>${anime.curiosidade}</p>
+                    <small style="margin-top:15px; color:var(--primary)">Clique para girar</small>
+                </div>`;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleFavorite(id) {
+        const index = favorites.indexOf(id);
+        if (index > -1) favorites.splice(index, 1);
+        else favorites.push(id);
+        localStorage.setItem('brotato_favs', JSON.stringify(favorites));
+        renderGrids();
+        if(document.getElementById('animeModal').style.display === "block") openModal(id);
+    }
+
+    function updateSidebar() {
+        const list = document.getElementById('sidebar-list');
+        list.innerHTML = favorites.length === 0 ? "<p style='text-align:center; color:#555;'>Vazio</p>" : "";
+        favorites.forEach(id => {
+            list.innerHTML += `<div class="fav-item" onclick="openModal('${id}')"><img src="${data[id].img}"><span>${data[id].title}</span></div>`;
+        });
+    }
+
+    function openModal(id) {
+        const anime = data[id];
+        const isFav = favorites.includes(id);
+        let color = anime.plataforma.toLowerCase() === "netflix" ? "#E50914" : "#f37021";
+        document.getElementById('modal-container').innerHTML = `
+            <img src="${anime.img}" class="modal-img">
+            <div class="modal-details">
+                <h1>${anime.title}</h1>
+                <p class="synopsis">${anime.synopsis}</p>
+                <a href="${anime.link}" target="_blank">
+                    <button class="btn-watch" style="background:${color}">ASSISTIR NA ${anime.plataforma.toUpperCase()}</button>
+                </a>
+                <button class="btn-fav-modal" onclick="toggleFavorite('${id}')">
+                    ${isFav ? '❤ REMOVER DOS FAVORITOS' : '♡ ADICIONAR AOS FAVORITOS'}
+                </button>
+            </div>`;
+        document.getElementById('animeModal').style.display = "block";
+    }
+
+    function closeModal() { document.getElementById('animeModal').style.display = "none"; }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+    function handleSearch() {
+        const query = document.getElementById('animeSearch').value.toLowerCase();
+        document.querySelectorAll('.anime-card').forEach(card => card.style.display = card.dataset.title.includes(query) ? "block" : "none");
+    }
+
+    // QUIZ SYSTEM - TODOS OS ANIMES (10 NÍVEIS CADA)
+    const quizBase = {
+        horimiya: [
+            {q: "Miyamura tem quantos piercings no total?", o: ["4", "7", "9", "5"], a: 2},
+            {q: "Qual o nome do irmão da Hori?", o: ["Souta", "Izumi", "Tooru", "Yuki"], a: 0},
+            {q: "O que Miyamura ajuda a carregar no 1º encontro?", o: ["Mochila", "Souta", "Compras", "Flores"], a: 1},
+            {q: "Qual o segredo da Hori na escola?", o: ["É otaku", "É rica", "Cuida da casa sozinha", "É briguenta"], a: 2},
+            {q: "Miyamura usa o que para esconder as tatuagens?", o: ["Casaco de inverno", "Maquiagem", "Vendas", "Camisa longa"], a: 0},
+            {q: "Qual a comida favorita do Souta?", o: ["Bolo", "Curry", "Melão", "Hambúrguer"], a: 2},
+            {q: "Quem era apaixonado pela Hori no início?", o: ["Ishikawa", "Sengoku", "Yanagi", "Shindo"], a: 0},
+            {q: "O pai da Hori se chama...", o: ["Kyosuke", "Yuriko", "Kenji", "Akira"], a: 0},
+            {q: "Miyamura cortou o cabelo em qual momento?", o: ["Final do anime", "Metade da série", "Início", "Não cortou"], a: 1},
+            {q: "Qual o festival escolar que eles organizam?", o: ["Esportivo", "Cultural", "de Verão", "de Artes"], a: 0}
+        ],
+        onepiece: [
+            {q: "Quem foi o primeiro companheiro de Luffy?", o: ["Nami", "Zoro", "Sanji", "Usopp"], a: 1},
+            {q: "Qual o nome do navio atual?", o: ["Going Merry", "Red Force", "Thousand Sunny", "Oro Jackson"], a: 2},
+            {q: "Qual a recompensa atual do Luffy (Anime)?", o: ["1.5 Bi", "3 Bi", "500 Mi", "1 Bi"], a: 1},
+            {q: "Quem é o pai do Sanji?", o: ["Zeff", "Judge", "Sengoku", "Garp"], a: 1},
+            {q: "Qual o nome da ilha onde o One Piece está?", o: ["Raftel/Laugh Tale", "Wano", "Marineford", "Skypiea"], a: 0},
+            {q: "Quem matou Ace?", o: ["Barba Negra", "Akainu", "Kizaru", "Aokiji"], a: 1},
+            {q: "Qual a Akuma no Mi do Brook?", o: ["Yomi Yomi", "Hana Hana", "Gomu Gomu", "Mero Mero"], a: 0},
+            {q: "Quantas cicatrizes Zoro tem no peito?", o: ["Nenhuma", "Uma gigante", "Duas", "Várias"], a: 1},
+            {q: "Quem é a arqueóloga do bando?", o: ["Nami", "Robin", "Vivi", "Hancock"], a: 1},
+            {q: "Luffy nasceu em qual mar?", o: ["North Blue", "South Blue", "West Blue", "East Blue"], a: 3}
+        ],
+        jjk: [
+            {q: "Qual o nome do ritual do Gojo?", o: ["Infinito", "Vazio Roxo", "Ilimitado", "Azul"], a: 2},
+            {q: "Quem é o 'Rei das Maldições'?", o: ["Mahito", "Sukuna", "Kenjaku", "Jogo"], a: 1},
+            {q: "Nobara utiliza qual técnica?", o: ["Ressonância", "Manipulação de Sangue", "Sombras", "Fala Amaldiçoada"], a: 0},
+            {q: "Quantos dedos Itadori come no 1º EP?", o: ["1", "2", "3", "5"], a: 0},
+            {q: "Qual o grau do Nanami?", o: ["Especial", "Grau 1", "Grau 2", "Grau 4"], a: 1},
+            {q: "O animal que Megumi invoca mais é...", o: ["Cão Divino", "Elefante", "Sapo", "Coelho"], a: 0},
+            {q: "Qual a Expansão de Domínio do Mahito?", o: ["Auto-Encarnação", "Vazio Imensurável", "Jardim das Sombras", "Santuário"], a: 0},
+            {q: "Quem ensinou Itadori a lutar?", o: ["Gojo", "Nanami", "Vovô Itadori", "Todo"], a: 0},
+            {q: "Panda é na verdade um...", o: ["Animal falante", "Cadavér Amaldiçoado", "Espírito", "Humano"], a: 1},
+            {q: "Qual a fraqueza do Gojo?", o: ["Fogo", "Prisão de Reino", "Sukuna", "Velocidade"], a: 1}
+        ],
+        demonslayer: [
+            {q: "Qual a cor da espada do Tanjiro?", o: ["Azul", "Vermelha", "Preta", "Amarela"], a: 2},
+            {q: "Quem é o mestre do Tanjiro?", o: ["Urokodaki", "Giyu", "Rengoku", "Muzan"], a: 0},
+            {q: "Nezuko carrega o quê na boca?", o: ["Bambu", "Osso", "Pano", "Nada"], a: 0},
+            {q: "Qual Hashira morre no filme do Trem Infinito?", o: ["Shinobu", "Rengoku", "Tengen", "Giyu"], a: 1},
+            {q: "Inosuke usa a máscara de qual animal?", o: ["Lobo", "Javali", "Urso", "Tigre"], a: 1},
+            {q: "Qual a respiração do Zenitsu?", o: ["Água", "Fogo", "Trovão", "Besta"], a: 2},
+            {q: "Quem é o vilão principal?", o: ["Akaza", "Muzan", "Doma", "Kokushibo"], a: 1},
+            {q: "Tanjiro tem qual marca na testa?", o: ["Cicatriz de queimadura", "Tatuagem", "Nascença", "Corte"], a: 0},
+            {q: "Quantas formas tem a Respiração da Água?", o: ["5", "10", "11", "12"], a: 2},
+            {q: "Qual o nome da família do Tanjiro?", o: ["Kamado", "Uzumaki", "Rengoku", "Tokito"], a: 0}
+        ],
+        bluelock: [
+            {q: "Quem é o criador do projeto Blue Lock?", o: ["Ego Jinpachi", "Anri Teieri", "Noa", "Isagi"], a: 0},
+            {q: "Qual a posição original do Isagi?", o: ["Goleiro", "Atacante", "Zagueiro", "Meio-campo"], a: 1},
+            {q: "Qual a 'arma' principal do Isagi?", o: ["Velocidade", "Drible", "Visão Espacial", "Chute Forte"], a: 2},
+            {q: "Quem é o 'Gênio' do time V?", o: ["Nagi", "Reo", "Zantetsu", "Barou"], a: 0},
+            {q: "Qual o número da camisa do Isagi?", o: ["10", "11", "9", "15"], a: 1},
+            {q: "Bachira diz que tem o quê dentro dele?", o: ["Um monstro", "Um herói", "Uma bola", "Fogo"], a: 0},
+            {q: "Quem é o 'Rei' no Blue Lock?", o: ["Kunigami", "Barou", "Rin", "Chigiri"], a: 1},
+            {q: "Qual o trauma do Chigiri?", o: ["Medo de bola", "Lesão no joelho", "Perdeu o pai", "É lento"], a: 1},
+            {q: "Quem é o melhor jogador do mundo no anime?", o: ["Loki", "Noel Noa", "Chris Prince", "Lavinho"], a: 1},
+            {q: "Rin Itoshi quer superar quem?", o: ["Isagi", "Seu irmão Sae", "Ego", "Nagi"], a: 1}
+        ],
+        kaoru: [
+            {q: "Rintaro estuda em qual escola?", o: ["Chidori", "Kikyo", "Hori", "Elite"], a: 0},
+            {q: "A escola Kikyo é apenas para...", o: ["Meninos", "Meninas", "Ricos", "Atletas"], a: 1},
+            {q: "Qual o talento do Rintaro?", o: ["Cozinhar", "Desenhar", "Lutar", "Estudar"], a: 1},
+            {q: "A família de Kaoru é dona do quê?", o: ["Escola", "Padaria/Doceria", "Banco", "Livraria"], a: 1},
+            {q: "Qual a cor do cabelo do Rintaro?", o: ["Preto", "Loiro", "Azul", "Rosa"], a: 1},
+            {q: "Rintaro é visto como o quê pela sociedade?", o: ["Herói", "Delinquente", "Gênio", "Pobre"], a: 1},
+            {q: "Kaoru é amiga de quem na Kikyo?", o: ["Subaru", "Saki", "Hina", "Madoka"], a: 0},
+            {q: "O que Rintaro dá para Kaoru no 1º EP?", o: ["Flor", "Bolo", "Chaveiro", "Borracha"], a: 1},
+            {q: "Qual o tema principal da obra?", o: ["Luta", "Preconceito e Gentileza", "Esportes", "Magia"], a: 1},
+            {q: "Rintaro é bom em qual matéria?", o: ["Matemática", "Inglês", "Artes", "História"], a: 2}
+        ],
+        quintuplas: [
+            {q: "Qual a ordem das irmãs (da mais velha)?", o: ["Ichika, Nino, Miku, Yotsuba, Itsuki", "Itsuki, Miku...", "Nino, Ichika...", "Miku, Nino..."], a: 0},
+            {q: "Qual irmã gosta de fones de ouvido?", o: ["Nino", "Miku", "Itsuki", "Ichika"], a: 1},
+            {q: "Quem é a primeira a se confessar?", o: ["Miku", "Nino", "Itsuki", "Yotsuba"], a: 1},
+            {q: "Qual irmã quer ser atriz?", o: ["Ichika", "Nino", "Yotsuba", "Itsuki"], a: 0},
+            {q: "Itsuki está sempre fazendo o quê?", o: ["Dormindo", "Comendo", "Lendo", "Correndo"], a: 1},
+            {q: "Qual o sobrenome das irmãs?", o: ["Uesugi", "Nakano", "Hori", "Takahashi"], a: 1},
+            {q: "Futaro conheceu uma delas no passado em...", o: ["Tóquio", "Quioto", "Osaka", "Hokkaido"], a: 1},
+            {q: "Qual delas usa uma fita de coelho?", o: ["Miku", "Yotsuba", "Nino", "Itsuki"], a: 1},
+            {q: "Quem é a mais atlética?", o: ["Itsuki", "Yotsuba", "Nino", "Ichika"], a: 1},
+            {q: "Futaro é o quê delas?", o: ["Amigo", "Tutor", "Irmão", "Chefe"], a: 1}
+        ],
+        classroom: [
+            {q: "Ayanokoji estuda em qual classe?", o: ["A", "B", "C", "D"], a: 3},
+            {q: "Quem é a líder da Classe B?", o: ["Ichinose", "Horikita", "Sakayanagi", "Kushida"], a: 0},
+            {q: "Qual o nome da 'sala branca'?", o: ["White Room", "Black Room", "Deep Room", "Zero Room"], a: 0},
+            {q: "Quem Ayanokoji usa como 'ferramenta'?", o: ["Kushida", "Horikita", "Sudou", "Hirata"], a: 1},
+            {q: "Qual a cor dos olhos do Ayanokoji?", o: ["Azul", "Castanho/Âmbar", "Vermelho", "Preto"], a: 1},
+            {q: "Chabashira-sensei é professora de qual classe?", o: ["A", "B", "C", "D"], a: 3},
+            {q: "Quem é o presidente do conselho estudantil?", o: ["Manabu Horikita", "Nagumo", "Ayanokoji", "Sudou"], a: 0},
+            {q: "Qual o segredo da Kushida?", o: ["É rica", "Personalidade dupla/agressiva", "É um gênio", "Odeia a escola"], a: 1},
+            {q: "O que os alunos ganham todo mês?", o: ["Dinheiro", "Comida", "Pontos", "Folgas"], a: 2},
+            {q: "Qual o objetivo do Ayanokoji?", o: ["Ser o 1º", "Viver uma vida normal", "Destruir a escola", "Namorar"], a: 1}
+        ],
+        nanatsu: [
+            {q: "Qual o pecado do Meliodas?", o: ["Ira", "Ganância", "Inveja", "Luxúria"], a: 0},
+            {q: "Quem é o pecado da Inveja?", o: ["Merlin", "Diane", "Elizabeth", "Elaine"], a: 1},
+            {q: "Qual a raça do Meliodas?", o: ["Humano", "Anjo", "Demônio", "Fada"], a: 2},
+            {q: "Escanor é o pecado do quê?", o: ["Orgulho", "Gula", "Preguiça", "Ira"], a: 0},
+            {q: "Ban é imortal?", o: ["Sim", "Não", "Só de dia", "Às vezes"], a: 0},
+            {q: "Quem é o Rei das Fadas?", o: ["Gowther", "King", "Ban", "Meliodas"], a: 1},
+            {q: "Qual o nome da espada do Meliodas?", o: ["Excalibur", "Lostvayne", "Chastiefol", "Rhitta"], a: 1},
+            {q: "Elizabeth é reencarnação de quem?", o: ["Uma Deusa", "Uma Fada", "Uma Bruxa", "Humana comum"], a: 0},
+            {q: "O poder de Escanor vem de onde?", o: ["Lua", "Sol", "Estrelas", "Trevas"], a: 1},
+            {q: "Quem é o pecado da Luxúria?", o: ["Merlin", "Gowther", "Diane", "Ban"], a: 1}
+        ],
+        drstone: [
+            {q: "Quanto tempo a humanidade ficou petrificada?", o: ["100 anos", "1000 anos", "3700 anos", "5000 anos"], a: 2},
+            {q: "Qual o bordão do Senku?", o: ["10 bilhões por cento", "Interessante", "Ciência é vida", "Eureka"], a: 0},
+            {q: "Quem foi o 2º a despertar?", o: ["Taiju", "Yuzuriha", "Tsukasa", "Kohaku"], a: 0},
+            {q: "Qual o nome da vila que Senku encontra?", o: ["Vila Ishigami", "Vila de Pedra", "Vila Ciência", "Vila Taiju"], a: 0},
+            {q: "Qual o elemento químico principal para despetrificar?", o: ["Água", "Ácido Nítrico", "Álcool", "Cloro"], a: 1},
+            {q: "Tsukasa quer um mundo sem...", o: ["Ciência", "Adultos corruptos", "Crianças", "Tecnologia"], a: 1},
+            {q: "Quem é o mestre da força física no grupo?", o: ["Senku", "Taiju", "Gen", "Chrome"], a: 1},
+            {q: "Gen Asagiri é um especialista em...", o: ["Luta", "Ciência", "Psicologia/Mentalismo", "Cozinha"], a: 2},
+            {q: "Qual a primeira invenção moderna de Senku?", o: ["Telefone", "Lâmpada", "Sabão", "Rádio"], a: 2},
+            {q: "Chrome é um cientista...", o: ["Moderno", "Heiticeiro/Primitivo", "Falso", "Maluco"], a: 1}
+        ],
+        spyfamily: [
+            {q: "Qual o codinome do Loid Forger?", o: ["Twilight", "Thorn Princess", "Daybreak", "Bond"], a: 0},
+            {q: "Qual o poder da Anya?", o: ["Força", "Ler mentes", "Invisibilidade", "Prever o futuro"], a: 1},
+            {q: "Yor trabalha secretamente como...", o: ["Espia", "Assassina", "Policial", "Cozinheira"], a: 1},
+            {q: "Qual a comida favorita da Anya?", o: ["Bolo", "Amendoim", "Pizza", "Cenoura"], a: 1},
+            {q: "O cachorro Bond consegue fazer o quê?", o: ["Falar", "Voar", "Ver o futuro", "Correr muito"], a: 2},
+            {q: "Qual o nome da operação do Loid?", o: ["Strix", "Phoenix", "Eagle", "Forger"], a: 0},
+            {q: "Anya estuda em qual escola?", o: ["Eden Academy", "Kikyo", "Orestes", "Elite"], a: 0},
+            {q: "Quem é o irmão da Yor?", o: ["Yuri", "Franky", "Damian", "Loid"], a: 0},
+            {q: "Damian Desmond é filho de quem?", o: ["O Alvo principal", "Um amigo do Loid", "Um espião", "Um professor"], a: 0},
+            {q: "O que Anya mais quer ganhar na escola?", o: ["Doces", "Estrelas Stella", "Tonitrus", "Amigos"], a: 1}
+        ],
+        konosuba: [
+            {q: "Como Kazuma morreu?", o: ["Atropelado", "Susto ao achar que seria atropelado", "Lutando", "Doença"], a: 1},
+            {q: "Aqua é a deusa de quê?", o: ["Fogo", "Água", "Sorte", "Trapaça"], a: 1},
+            {q: "Qual o único feitiço que Megumin usa?", o: ["Fogo", "Cura", "Explosão", "Gelo"], a: 2},
+            {q: "Darkness tem qual 'problema'?", o: ["É fraca", "É masoquista", "É cega", "É lenta"], a: 1},
+            {q: "Qual a classe do Kazuma?", o: ["Guerreiro", "Mago", "Aventureiro (mais baixa)", "Ladrão"], a: 2},
+            {q: "Megumin pertence a qual clã?", o: ["Demônios Carmesim", "Anjos", "Humanos", "Fadas"], a: 0},
+            {q: "Qual o atributo mais alto do Kazuma?", o: ["Força", "Sorte", "Inteligência", "Magia"], a: 1},
+            {q: "Qual o nome da guilda?", o: ["Brotato", "Axel", "Tóquio", "Konosuba"], a: 1},
+            {q: "Aqua é útil em combate?", o: ["Sim, muito", "Raramente (só chora)", "Nunca", "Sempre"], a: 1},
+            {q: "Kazuma rouba o quê das garotas com sua habilidade?", o: ["Dinheiro", "Calcinhas", "Armas", "Comida"], a: 1}
+        ]
+    };
+
+    let currentQ = 0; let score = 0; let activeQuiz = [];
+
+    function populateSelect() {
+        const sel = document.getElementById('anime-select');
+        sel.innerHTML = '<option value="">-- Escolha um Anime --</option>';
+        Object.keys(quizBase).forEach(id => {
+            if(data[id]) sel.innerHTML += `<option value="${id}">${data[id].title}</option>`;
+        });
+    }
+
+    function startQuiz() {
+        const id = document.getElementById('anime-select').value;
+        if(!id) return;
+        activeQuiz = quizBase[id];
+        currentQ = 0; score = 0;
+        document.getElementById('quiz-game').style.display = 'block';
+        document.getElementById('quiz-result').style.display = 'none';
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = activeQuiz[currentQ];
+        document.getElementById('lvl-txt').innerText = `Nível ${currentQ + 1}`;
+        document.getElementById('p-fill').style.width = `${(currentQ + 1) * 10}%`;
+        document.getElementById('question').innerText = q.q;
+        const opts = document.getElementById('options');
+        opts.innerHTML = "";
+        q.o.forEach((opt, i) => {
+            const d = document.createElement('div');
+            d.className = 'quiz-option'; d.innerText = opt;
+            d.onclick = () => {
+                if(i === q.a) { d.classList.add('correct'); score++; }
+                else { d.classList.add('wrong'); document.querySelectorAll('.quiz-option')[q.a].classList.add('correct'); }
+                document.querySelectorAll('.quiz-option').forEach(o => o.style.pointerEvents = 'none');
+                document.getElementById('next-btn').style.display = 'block';
+            };
+            opts.appendChild(d);
+        });
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < 10) showQuestion();
+        else finishQuiz();
+    }
+
+    function finishQuiz() {
+        document.getElementById('quiz-game').style.display = 'none';
+        document.getElementById('quiz-result').style.display = 'block';
+        document.getElementById('result-title').innerText = score >= 7 ? "Mestre Otaku! 🔥" : "Continue Treinando! ⛩";
+        document.getElementById('score-text').innerText = `Você completou os 10 níveis e acertou ${score}!`;
+    }
+
+    window.onload = () => { renderGrids(); populateSelect(); };
+    window.onclick = (e) => { if(e.target.className === 'modal') closeModal(); }
+</script>
+</body>
+</html>
